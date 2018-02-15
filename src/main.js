@@ -6,8 +6,6 @@ import fastclick from 'fastclick'
 
 import 'common/stylus/index.styl'
 
-Vue.config.productionTip = false
-
 fastclick.attach(document.body) // 解决移动端快速点击问题，同时没有300ms的延迟
 
 /* eslint-disable no-new */
