@@ -17,7 +17,7 @@ export function getRecommend () {
 export function getDiscList () {
   // 页面上访问这个地址， https://y.qq.com/portal/playlist.html  查看全部歌单
   // const url = 'https://c.y.qq.com/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg'
-  // 后端做了一个转发
+  // 后端做了一个转发, 在build/dev-server.js 中配置了
   const url = '/api/getDiscList'
 
   const data = Object.assign({}, commonParams, {

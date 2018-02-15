@@ -1,25 +1,38 @@
 <template>
   <div class="recommend">
-    <div class="recommend-content">
-      <div v-if="recommends.length" class="slider-wrapper">
-        <slider>
-          <div v-for="item in recommends">
-            <a :href="item.linkUrl">
-              <img :src="item.picUrl">
-            </a>
-          </div>
-        </slider>
+<!-- 因为歌单列表 是一个异步动作，所以要把discList作为data属性传入，在scroll组件找那个监听data变化，再refresh -->
+    <scroll ref="scroll" class="recommend-content" :data="discList">
+      <div>
+        <div v-if="recommends.length" class="slider-wrapper">
+          <slider>
+            <div v-for="item in recommends">
+              <a :href="item.linkUrl">
+                <img @load="loadImage" :src="item.picUrl">
+              </a>
+            </div>
+          </slider>
+        </div>
+        <div class="recommend-list">
+          <h1 class="list-title">热门歌单推荐</h1>
+          <ul>
+            <li v-for="item in discList" class="item">
+              <div class="icon">
+                <img width="60" height="60" :src="item.imgurl" alt="">
+              </div>
+              <div class="text">
+                <h2 class="name" v-html="item.creator.name"></h2>
+                <p class="desc" v-html="item.dissname"></p>
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div class="recommend-list">
-        <h1 class="list-title">热门歌单推荐</h1>
-        <ul>
-        </ul>
-      </div>
-    </div>
+    </scroll>
   </div>
 </template>
 
 <script type="text/ecmascript-6">
+import Scroll from 'base/scroll/scroll'
 import Slider from 'base/slider/slider'
 import {getRecommend, getDiscList} from 'api/recommend'
 import {ERR_OK} from 'api/config'
@@ -27,7 +40,8 @@ import {ERR_OK} from 'api/config'
 export default {
   data () {
     return {
-      recommends: []
+      recommends: [],
+      discList: []
     }
   },
   created () {
@@ -45,16 +59,23 @@ export default {
     },
     _getDiscList () {
       getDiscList().then(res => {
-        console.log(res)
         if (res.code === ERR_OK) {
-          console.log(res)
-          console.log(res.data.list)
+          // 这是异步过程，同时计算高度依赖于 轮播图slider的高度渲染完毕， 所以我们加了一个data属性discList，和img的load完成事件loadImage， 都是为了出发refresh
+          this.discList = res.data.list
         }
       })
+    },
+    loadImage () {
+      // 图片加载其实也是一个异步过程，因为我们不知道 轮播图slider的高度，所以需要在img加载完后再去refresh一下scroll
+      if (!this.checkLoaded) { // 因为有多张图片，而我们只需要执行一次
+        this.$refs.scroll.refresh()
+        this.checkLoaded = true
+      }
     }
   },
   components: {
-    Slider
+    Slider,
+    Scroll
   }
 }
 </script>
