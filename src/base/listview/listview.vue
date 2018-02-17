@@ -9,7 +9,7 @@
       <li ref="listGroup" v-for="group in data" class="list-group">
         <h2 class="list-group-title">{{group.title}}</h2>
         <ul>
-          <li v-for="item in group.items" class="list-group-item">
+          <li @click="selectItem(item)" v-for="item in group.items" class="list-group-item">
             <img class="avatar" v-lazy="item.avatar" alt="">  
             <span class="name">{{item.name}}</span>
           </li>
@@ -79,6 +79,10 @@ export default {
     }
   },
   methods: {
+    selectItem (item) {
+      // 点击的时候把item给emit出去告诉singer组件
+      this.$emit('select', item)
+    },
     onShortcutTouchStart (e) {
       let anchorIndex = getData(e.target, 'index')
       let firstTouch = e.touches[0]
