@@ -1,10 +1,11 @@
 <template>
   <div class="song-list">
     <ul>
-      <li v-for="song in songs" class="item">
+      <li @click="selectItem(song, index)" v-for="(song, index) in songs" class="item">
         <div class="content">
           <h2 class="name">{{song.name}}</h2>
-          <p class="desc">{{song.singer}}·{{song.album}}</p>
+          <!-- <p class="desc">{{song.singer}}·{{song.album}}</p> -->
+          <p class="desc">{{getDesc(song)}}</p>
         </div>
       </li>
     </ul>
@@ -17,11 +18,15 @@ export default {
     songs: {
       type: Array,
       default: []
+    }
+  },
+  methods: {
+    selectItem (item, index) {
+      // 歌曲被点击后，emit出去告诉外层组件，song和index
+      this.$emit('select', item, index)
     },
-    methods: {
-      getDesc (song) {
-        return `${song.singer}·${song.album}`
-      }
+    getDesc (song) {
+      return `${song.singer}·${song.album}`
     }
   }
 }
