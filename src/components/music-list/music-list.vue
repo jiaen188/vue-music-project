@@ -4,13 +4,24 @@
       <i class="icon-back"></i>
     </div>
     <h1 class="title" v-html="title"></h1>
-    <div class="bg-image" :style="bgStyle">
+    <div class="bg-image" :style="bgStyle" ref="bgImage">
       <div class="filter"></div>
     </div>
+    <div class="bg-layer" ref="layer"></div>
+    <scroll @scroll="scroll" :probe-type="probeType" listen-scroll=""listenScroll :data="songs" class="list" ref="list">
+      <div class="song-list-wrapper">
+        <song-list :songs="songs"></song-list>
+      </div>
+    </scroll>
   </div>
 </template>
 
 <script type="text/ecmascript-6">
+import Scroll from 'base/scroll/scroll'
+import SongList from 'base/song-list/song-list'
+
+const RESERVER_HEIGHT = 40
+
 export default {
   props: {
     bgImage: {
@@ -26,10 +37,58 @@ export default {
       default: ''
     }
   },
+  data () {
+    return {
+      scrollY: 0
+    }
+  },
   computed: {
     bgStyle () {
       return `background-image:url(${this.bgImage})`
     }
+  },
+  created () {
+    // probeType为1是表示缓动动画, 3是快速滚动动画
+    this.probeType = 3
+    // 是否需要监听滚动， 默认不需要，现在是需要的，那么scroll组件就会在滚动的时候emit一个pos出来，然后外层组件用scroll事件接收
+    this.listenScroll = true
+  },
+  mounted () {
+    this.imageHeight = this.$refs.bgImage.clientHeight
+    // 为了保留标题的高度，可滚动距离还要再小 40
+    this.minTranslateY = -this.imageHeight + RESERVER_HEIGHT
+    // 背景图片是自适应的，所以要获取高度，在赋值给scroll的top
+    this.$refs.list.$el.style.top = `${this.imageHeight}px`
+  },
+  methods: {
+    // 接收scroll组件在 滚动的时候， 实时emit出来的pos
+    scroll (pos) {
+      this.scrollY = pos.y
+    }
+  },
+  watch: {
+    scrollY (newY) {
+      // 因为layer这个dom的高度是100%手机屏幕，所以layer滚动的距离是 从0 到 -bgImage（向上为负）， newY是0，到负无穷，为了体验好留出 标题的高度，可滚动距离还要再小40
+      let translateY = Math.max(this.minTranslateY, newY)
+      this.$refs.layer.style['transform'] = `translate3d(0, ${translateY}px, 0)`
+      this.$refs.layer.style['webkitTransform'] = `translate3d(0, ${translateY}px, 0)`
+
+      let zIndex = 0
+      // 当layer滚动到高度为刚好接触到 标题时，需要我们把bgImage背景图的高度 height设置为40px，zindex这是为10
+      if (newY < this.minTranslateY) {
+        zIndex = 10
+        this.$refs.bgImage.style.paddingTop = 0
+        this.$refs.bgImage.style.height = `${RESERVER_HEIGHT}px`
+      } else {
+        this.$refs.bgImage.style.paddingTop = '70%'
+        this.$refs.bgImage.style.height = 0
+      }
+      this.$refs.bgImage.style.zIndex = zIndex
+    }
+  },
+  components: {
+    Scroll,
+    SongList
   }
 }
 </script>
