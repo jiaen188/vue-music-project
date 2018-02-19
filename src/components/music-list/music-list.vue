@@ -1,16 +1,25 @@
 <template>
   <div class="music-list">
-    <div class="back">
+    <div class="back" @click="back">
       <i class="icon-back"></i>
     </div>
     <h1 class="title" v-html="title"></h1>
     <div class="bg-image" :style="bgStyle" ref="bgImage">
+      <div class="play-wrapper">
+        <div class="play" v-show="songs.length > 0" ref="playButton">
+          <i class="icon-play"></i>
+          <span class="text">随机播放全部</span>
+        </div>
+      </div>
       <div class="filter"></div>
     </div>
     <div class="bg-layer" ref="layer"></div>
     <scroll @scroll="scroll" :probe-type="probeType" listen-scroll=""listenScroll :data="songs" class="list" ref="list">
       <div class="song-list-wrapper">
         <song-list :songs="songs"></song-list>
+      </div>
+      <div class="loading-container" v-show="!songs.length">
+        <loading></loading>
       </div>
     </scroll>
   </div>
@@ -19,8 +28,11 @@
 <script type="text/ecmascript-6">
 import Scroll from 'base/scroll/scroll'
 import SongList from 'base/song-list/song-list'
+import Loading from 'base/loading/loading'
+import { prefixStyle } from 'common/js/dom'
 
 const RESERVER_HEIGHT = 40
+const transform = prefixStyle('transform')
 
 export default {
   props: {
@@ -64,14 +76,19 @@ export default {
     // 接收scroll组件在 滚动的时候， 实时emit出来的pos
     scroll (pos) {
       this.scrollY = pos.y
+    },
+    back () {
+      this.$router.back()
     }
   },
   watch: {
     scrollY (newY) {
       // 因为layer这个dom的高度是100%手机屏幕，所以layer滚动的距离是 从0 到 -bgImage（向上为负）， newY是0，到负无穷，为了体验好留出 标题的高度，可滚动距离还要再小40
       let translateY = Math.max(this.minTranslateY, newY)
-      this.$refs.layer.style['transform'] = `translate3d(0, ${translateY}px, 0)`
-      this.$refs.layer.style['webkitTransform'] = `translate3d(0, ${translateY}px, 0)`
+      /* this.$refs.layer.style['transform'] = `translate3d(0, ${translateY}px, 0)`
+      this.$refs.layer.style['webkitTransform'] = `translate3d(0, ${translateY}px, 0)` */
+      // 做了一个样式 预处理的通用方法 tranform
+      this.$refs.layer.style[transform] = `translate3d(0, ${translateY}px, 0)`
 
       let zIndex = 0
       // 当layer滚动到高度为刚好接触到 标题时，需要我们把bgImage背景图的高度 height设置为40px，zindex这是为10
@@ -79,16 +96,33 @@ export default {
         zIndex = 10
         this.$refs.bgImage.style.paddingTop = 0
         this.$refs.bgImage.style.height = `${RESERVER_HEIGHT}px`
+        // “随机播放按钮的显示，隐藏”
+        this.$refs.playButton.style.display = 'none'
       } else {
         this.$refs.bgImage.style.paddingTop = '70%'
         this.$refs.bgImage.style.height = 0
+        this.$refs.playButton.style.display = ''
       }
+      this.$refs.bgImage.style.zIndex = zIndex
+
+      // 下滑到最底部的时候， 再下滑，背景图有个放大效果
+      let scale = 1
+      const percent = Math.abs(newY / this.imageHeight)
+      if (newY > 0) {
+        scale = 1 + percent
+        zIndex = 10
+      }
+      /* this.$refs.bgImage.style['transform'] = `scale(${scale})`
+      this.$refs.bgImage.style['webkitTransform'] = `scale(${scale})` */
+      // 做了一个样式预处理的通用方法 transform
+      this.$refs.bgImage.style[transform] = `scale(${scale})`
       this.$refs.bgImage.style.zIndex = zIndex
     }
   },
   components: {
     Scroll,
-    SongList
+    SongList,
+    Loading
   }
 }
 </script>
