@@ -31,14 +31,14 @@
             <div class="icon i-left">
                 <i class="icon-sequence"></i>
             </div>
-            <div class="icon i-left">
-                <i class="icon-prev"></i>
+            <div class="icon i-left" :class="disableClass">
+                <i @click="prev" class="icon-prev"></i>
             </div>
-            <div class="icon i-center">
+            <div class="icon i-center" :class="disableClass">
                 <i @click="togglePlaying" :class="playIcon"></i>
             </div>
-            <div class="icon i-right">
-                <i class="icon-next"></i>
+            <div class="icon i-right" :class="disableClass">
+                <i @click="next" class="icon-next"></i>
             </div>
             <div class="icon i-right">
                 <i class="icon-not-favorite"></i>
@@ -65,7 +65,7 @@
         </div>
         </div>
     </transition>
-    <audio ref="audio" :src="currentSong.url"></audio>
+    <audio ref="audio" :src="currentSong.url" @canplay="ready" @error="error"></audio>
   </div>
 </template>
 
@@ -73,10 +73,16 @@
 import { mapGetters, mapMutations } from 'vuex'
 import animations from 'create-keyframe-animation'
 import { prefixStyle } from 'common/js/dom'
+import { getSongKey } from 'api/singer'
 
 const transform = prefixStyle('transform')
 
 export default {
+  data () {
+    return {
+      songReady: false
+    }
+  },
   computed: {
     cdClass () {
       return this.playing ? 'play' : 'play pause'
@@ -87,11 +93,15 @@ export default {
     miniIcon () {
       return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
     },
+    disableClass () {
+      return this.songReady ? '' : 'disable'
+    },
     ...mapGetters([
       'fullScreen',
       'playlist',
       'currentSong',
-      'playing'
+      'playing',
+      'currentIndex'
     ])
   },
   methods: {
@@ -153,6 +163,62 @@ export default {
       // 改变的只是vuex中的状态，所以要在watch中根据状态做不同的处理
       this.setPlayingState(!this.playing)
     },
+    next () {
+      // 如果audio还没有加载好，就不让用户点击
+      if (!this.songReady) {
+        return
+      }
+      let index = this.currentIndex + 1
+      if (index === this.playlist.length) {
+        index = 0
+      }
+      // 现在的歌曲地址，需要一个key， 所以我们先通过vuex改变playlist，再改变currentIndex， 最后改变currentSong
+      let song = Object.assign({}, this.playlist[index])
+      getSongKey(song).then(res => {
+        song.url = `http://dl.stream.qqmusic.qq.com/C400${song.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
+        let newPlaylist = JSON.parse(JSON.stringify(this.playlist))
+        newPlaylist[index] = song
+
+        this.setPlaylist(newPlaylist)
+        this.setCurrentIndex(index)
+        if (!this.playing) {
+          this.togglePlaying()
+        }
+        this.songReady = false
+      })
+    },
+    prev () {
+      // 如果audio还没有加载好，就不让用户点击
+      if (!this.songReady) {
+        return
+      }
+      let index = this.currentIndex - 1
+      if (index === -1) {
+        index = this.playlist.length - 1
+      }
+      // 现在的歌曲地址，需要一个key， 所以我们先通过vuex改变playlist，再改变currentIndex， 最后改变currentSong
+      let song = Object.assign({}, this.playlist[index])
+      getSongKey(song).then(res => {
+        song.url = `http://dl.stream.qqmusic.qq.com/C400${song.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
+        let newPlaylist = JSON.parse(JSON.stringify(this.playlist))
+        newPlaylist[index] = song
+
+        this.setPlaylist(newPlaylist)
+        this.setCurrentIndex(index)
+        if (!this.playing) {
+          this.togglePlaying()
+        }
+        this.songReady = false
+      })
+    },
+    // 防止快速点击切换
+    ready () {
+      this.songReady = true
+    },
+    // 如果网络出现问题，或者url有问题，我们也设置 songReady为true，可以让用户切换歌曲
+    error () {
+      this.songReady = true
+    },
     _getPosAndScale () {
       // 迷你播放器中 image的宽度， 圆心到左边距，圆形到底边距
       const targetWidth = 40
@@ -177,7 +243,9 @@ export default {
     },
     ...mapMutations({
       setFullScreen: 'SET_FULL_SCREEN',
-      setPlayingState: 'SET_PLAYING_STATE'
+      setPlayingState: 'SET_PLAYING_STATE',
+      setCurrentIndex: 'SET_CURRENT_INDEX',
+      setPlaylist: 'SET_PLAYLIST'
     })
   },
   watch: {
