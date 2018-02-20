@@ -53,7 +53,11 @@ export default {
     },
     // 用户点击也能改变 播放进度
     progressClick (e) {
-      this._offset(e.offsetX)
+      // 这里当我们点击 progressBtn 的时候， e.offsetX 获取不对
+      const rect = this.$refs.progressBar.getBoundingClientRect()
+      const offsetWidth = e.pageX - rect.left
+      // this._offset(e.offsetX)
+      this._offset(offsetWidth)
       this._triggerPercent()
     },
     // 拖动完成，告诉外部组件，这次拖动的百分比

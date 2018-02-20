@@ -35,8 +35,8 @@
               <span class="time time-r">{{format(currentSong.duration)}}</span>
             </div>
             <div class="operators">
-              <div class="icon i-left">
-                  <i class="icon-sequence"></i>
+              <div class="icon i-left" @click="changeMode">
+                  <i :class="iconMode"></i>
               </div>
               <div class="icon i-left" :class="disableClass">
                   <i @click="prev" class="icon-prev"></i>
@@ -78,7 +78,8 @@
           :src="currentSong.url" 
           @canplay="ready" 
           @error="error"
-          @timeupdate="updateTime"></audio>
+          @timeupdate="updateTime"
+          @ended="end"></audio>
   </div>
 </template>
 
@@ -89,6 +90,8 @@ import { prefixStyle } from 'common/js/dom'
 import { getSongKey } from 'api/singer'
 import ProgressBar from 'base/progress-bar/progress-bar'
 import ProgressCircle from 'base/progress-circle/progress-circle'
+import { playMode } from 'common/js/config'
+import { shuffle } from 'common/js/util'
 
 const transform = prefixStyle('transform')
 
@@ -107,6 +110,9 @@ export default {
     playIcon () {
       return this.playing ? 'icon-pause' : 'icon-play'
     },
+    iconMode () {
+      return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
+    },
     miniIcon () {
       return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
     },
@@ -121,7 +127,9 @@ export default {
       'playlist',
       'currentSong',
       'playing',
-      'currentIndex'
+      'currentIndex',
+      'mode',
+      'sequenceList'
     ])
   },
   methods: {
@@ -182,6 +190,21 @@ export default {
       // setPlayingState是从 mapMutations获取的，playing是从 mapGetters中获取的
       // 改变的只是vuex中的状态，所以要在watch中根据状态做不同的处理
       this.setPlayingState(!this.playing)
+    },
+    // 如果当前歌曲播放结束
+    end () {
+      // 如果是 循环当前
+      if (this.mode === playMode.loop) {
+        this.loop()
+      } else {
+        // 如果是顺序播放， 或者随机播放，就播放下一首
+        this.next()
+      }
+    },
+    // 当播放顺序是 循环当前时， 歌曲播放到最后end，可以把currentTime设置为0， 就又会重新开始播放
+    loop () {
+      this.$refs.audio.currentTime = 0
+      this.$refs.audio.play()
     },
     next () {
       // 如果audio还没有加载好，就不让用户点击
@@ -256,6 +279,25 @@ export default {
         this.togglePlaying(this.playing)
       }
     },
+    // 点击切换模式
+    changeMode () {
+      const mode = (this.mode + 1) % 3
+      this.setPlayMode(mode)
+      let list = null
+      if (mode === playMode.random) {
+        list = shuffle(this.sequenceList)
+      } else {
+        list = this.sequenceList
+      }
+      // 当改变 playlist的时候，由于index不变，currentSong会变化，为了保证currentSong不变，我们要重置currentIndex
+      this.resetCurrentIndex(list)
+      this.setPlaylist(list)
+    },
+    // 重置当前的index
+    resetCurrentIndex (list) {
+      let index = list.findIndex(item => item.id === this.currentSong.id)
+      this.setCurrentIndex(index)
+    },
     // 补零函数
     _pad (num, n = 2) {
       let len = num.toString().length
@@ -291,11 +333,16 @@ export default {
       setFullScreen: 'SET_FULL_SCREEN',
       setPlayingState: 'SET_PLAYING_STATE',
       setCurrentIndex: 'SET_CURRENT_INDEX',
-      setPlaylist: 'SET_PLAYLIST'
+      setPlaylist: 'SET_PLAYLIST',
+      setPlayMode: 'SET_PLAY_MODE'
     })
   },
   watch: {
-    currentSong () {
+    currentSong (newSong, oldSong) {
+      // 当我们切换播放顺序的时候，为了确保当前播放的歌曲不变，我们重置了currentIndex，实际上currentSong是已经改变了（数组的index变了），
+      // 所以说会触发这个计算属性, 因此我们判断，newSong和oldSong的id不会，就是同一首，不执行接下来，
+      // 否则当用户暂停播放的时候，再切换个播放顺序，下一首会播放
+      if (newSong.id === oldSong.id) return
       this.$nextTick(() => {
         this.$refs.audio.play()
       })

@@ -5,8 +5,8 @@
 </template>
 
 <script type="text/ecmascript-6">
-import { mapGetters } from 'vuex'
-import { getSingerDetail } from 'api/singer'
+import { mapGetters, mapMutations } from 'vuex'
+import { getSingerDetail, getSongKey } from 'api/singer'
 import { ERR_OK } from 'api/config'
 import { createSong } from 'common/js/song'
 import MusicList from 'components/music-list/music-list'
@@ -42,6 +42,11 @@ export default {
       getSingerDetail(this.singer.id).then(res => {
         if (res.code === ERR_OK) {
           this.songs = this._normalizeSongs(res.data.list)
+          getSongKey(this.songs[0]).then(res => {
+            let song = this.songs[0]
+            song.url = `http://dl.stream.qqmusic.qq.com/C400${song.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
+            this.setPlaylist(this.songs)
+          })
         }
       })
     },
@@ -54,7 +59,10 @@ export default {
         }
       })
       return ret
-    }
+    },
+    ...mapMutations({
+      setPlaylist: 'SET_PLAYLIST'
+    })
   },
   components: {
     MusicList

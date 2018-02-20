@@ -6,9 +6,9 @@
     <h1 class="title" v-html="title"></h1>
     <div class="bg-image" :style="bgStyle" ref="bgImage">
       <div class="play-wrapper">
-        <div class="play" v-show="songs.length > 0" ref="playButton">
+        <div class="play" v-show="songs.length > 0" ref="playButton" @click="playAll">
           <i class="icon-play"></i>
-          <span class="text">随机播放全部</span>
+          <span class="text">播放全部</span>
         </div>
       </div>
       <div class="filter"></div>
@@ -30,7 +30,7 @@ import Scroll from 'base/scroll/scroll'
 import SongList from 'base/song-list/song-list'
 import Loading from 'base/loading/loading'
 import { prefixStyle } from 'common/js/dom'
-import { mapActions } from 'vuex'
+import { mapActions, mapMutations } from 'vuex'
 
 const RESERVER_HEIGHT = 40
 const transform = prefixStyle('transform')
@@ -81,15 +81,34 @@ export default {
     back () {
       this.$router.back()
     },
-    selectItem (item, index) {
+    selectItem (selectSong, index) {
+      let newPlaylist = JSON.parse(JSON.stringify(this.songs))
+      newPlaylist[index] = selectSong
+      this.setPlaylist(newPlaylist)
       // 接收到 song-list组件的点击时，emit出来的 item和index
       this.selectPlay({
-        list: this.songs,
+        list: newPlaylist,
         index
       })
     },
+    random () {
+      this.randomPlay({
+        list: this.songs
+      })
+    },
+    // 播放此专辑
+    playAll () {
+      this.sequencePlay({
+        list: this.songs
+      })
+    },
+    ...mapMutations({
+      setPlaylist: 'SET_PLAYLIST'
+    }),
     ...mapActions([
-      'selectPlay'
+      'selectPlay',
+      'randomPlay',
+      'sequencePlay'
     ])
   },
   watch: {
