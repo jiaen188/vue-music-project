@@ -6,7 +6,7 @@
 
 <script type="text/ecmascript-6">
 import { mapGetters } from 'vuex'
-import { getSingerDetail, getSongKey } from 'api/singer'
+import { getSingerDetail } from 'api/singer'
 import { ERR_OK } from 'api/config'
 import { createSong } from 'common/js/song'
 import MusicList from 'components/music-list/music-list'
@@ -30,7 +30,6 @@ export default {
     ])
   },
   created () {
-    console.log(this.singer)
     this._getDetail()
   },
   methods: {
@@ -42,10 +41,7 @@ export default {
       }
       getSingerDetail(this.singer.id).then(res => {
         if (res.code === ERR_OK) {
-          console.log(res)
           this.songs = this._normalizeSongs(res.data.list)
-          console.log(this.songs)
-          this._getSongKey(this.songs[0])
         }
       })
     },
@@ -58,12 +54,6 @@ export default {
         }
       })
       return ret
-    },
-    _getSongKey (musicData) {
-      getSongKey(musicData).then(res => {
-        console.log('获取了歌曲的key')
-        console.log(res)
-      })
     }
   },
   components: {
