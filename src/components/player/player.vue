@@ -20,7 +20,7 @@
         <div class="middle">
             <div class="middle-l">
             <div class="cd-wrapper" ref="cdWrapper">
-                <div class="cd">
+                <div class="cd" :class="cdClass">
                 <img class="image" :src="currentSong.image" alt="">
                 </div>
             </div>
@@ -35,7 +35,7 @@
                 <i class="icon-prev"></i>
             </div>
             <div class="icon i-center">
-                <i class="icon-play"></i>
+                <i @click="togglePlaying" :class="playIcon"></i>
             </div>
             <div class="icon i-right">
                 <i class="icon-next"></i>
@@ -51,13 +51,15 @@
         <!-- 小的迷你的播放器页面 -->
         <div class="mini-player" v-show="!fullScreen" @click="open">
         <div class="icon">
-            <img width="40" height="40" :src="currentSong.image" alt="">
+            <img :class="cdClass" width="40" height="40" :src="currentSong.image" alt="">
         </div>
         <div class="text">
             <h2 class="name" v-html="currentSong.name"></h2>
             <p class="desc" v-html="currentSong.singer"></p>
         </div>
-        <div class="control"></div>
+        <div class="control">
+            <i @click.stop="togglePlaying" :class="miniIcon"></i>
+        </div>
         <div class="control">
             <i class="icon-playlist"></i>
         </div>
@@ -76,10 +78,20 @@ const transform = prefixStyle('transform')
 
 export default {
   computed: {
+    cdClass () {
+      return this.playing ? 'play' : 'play pause'
+    },
+    playIcon () {
+      return this.playing ? 'icon-pause' : 'icon-play'
+    },
+    miniIcon () {
+      return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
+    },
     ...mapGetters([
       'fullScreen',
       'playlist',
-      'currentSong'
+      'currentSong',
+      'playing'
     ])
   },
   methods: {
@@ -135,6 +147,12 @@ export default {
       this.$refs.cdWrapper.style.transition = ''
       this.$refs.cdWrapper.style[transform] = ''
     },
+    // 切换播放状态
+    togglePlaying () {
+      // setPlayingState是从 mapMutations获取的，playing是从 mapGetters中获取的
+      // 改变的只是vuex中的状态，所以要在watch中根据状态做不同的处理
+      this.setPlayingState(!this.playing)
+    },
     _getPosAndScale () {
       // 迷你播放器中 image的宽度， 圆心到左边距，圆形到底边距
       const targetWidth = 40
@@ -158,13 +176,21 @@ export default {
       }
     },
     ...mapMutations({
-      setFullScreen: 'SET_FULL_SCREEN'
+      setFullScreen: 'SET_FULL_SCREEN',
+      setPlayingState: 'SET_PLAYING_STATE'
     })
   },
   watch: {
     currentSong () {
       this.$nextTick(() => {
         this.$refs.audio.play()
+      })
+    },
+    // 检测到vuex中播放状态的变化，做对应的处理
+    playing (newPlaying) {
+      this.$nextTick(() => {
+        const audio = this.$refs.audio
+        newPlaying ? audio.play() : audio.pause()
       })
     }
   }
