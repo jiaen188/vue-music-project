@@ -21,7 +21,7 @@ export function createSong (musicData) {
     duration: musicData.interval,
     image: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${musicData.albummid}.jpg?max_age=2592000`,
     // 这里的vkey是不对的，要另外用接口 getSongKey获取
-    url: `http://dl.stream.qqmusic.qq.com/C400${musicData.songmid}.m4a?vkey=D13AB2CF121730983DE660243F40200E36CF746840D5C91D0E93C0ABC557CC72AA897E57CEDC5DC331B9655E6576B8AB84A9ACBA8170EA12&guid=862835478&uin=0&fromtag=66`
+    url: `http://dl.stream.qqmusic.qq.com/C400${musicData.songmid}.m4a?vkey=15DAB87465371D2108667DEF560180D89877FF5F05CE9C373C22C06F2971245AF0F12EDF20878585BAC525290C6D30496D7EA2027C155A0A&guid=862835478&uin=0&fromtag=66`
   })
 }
 
