@@ -42,6 +42,7 @@ let vendor = (() => {
   return false
 })()
 
+// 这个函数用于判断浏览器适用的css3的前缀类型
 export function prefixStyle (style) {
   if (vendor === false) {
     return false
