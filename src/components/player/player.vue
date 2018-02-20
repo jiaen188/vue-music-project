@@ -27,22 +27,29 @@
             </div>
         </div>
         <div class="bottom">
+            <div class="progress-wrapper">
+              <span class="time time-l">{{format(currentTime)}}</span>
+              <div class="progress-bar-wrapper">
+                <progress-bar @percentChange="onPercentChange" :percent="percent"></progress-bar>
+              </div>
+              <span class="time time-r">{{format(currentSong.duration)}}</span>
+            </div>
             <div class="operators">
-            <div class="icon i-left">
-                <i class="icon-sequence"></i>
-            </div>
-            <div class="icon i-left" :class="disableClass">
-                <i @click="prev" class="icon-prev"></i>
-            </div>
-            <div class="icon i-center" :class="disableClass">
-                <i @click="togglePlaying" :class="playIcon"></i>
-            </div>
-            <div class="icon i-right" :class="disableClass">
-                <i @click="next" class="icon-next"></i>
-            </div>
-            <div class="icon i-right">
-                <i class="icon-not-favorite"></i>
-            </div>
+              <div class="icon i-left">
+                  <i class="icon-sequence"></i>
+              </div>
+              <div class="icon i-left" :class="disableClass">
+                  <i @click="prev" class="icon-prev"></i>
+              </div>
+              <div class="icon i-center" :class="disableClass">
+                  <i @click="togglePlaying" :class="playIcon"></i>
+              </div>
+              <div class="icon i-right" :class="disableClass">
+                  <i @click="next" class="icon-next"></i>
+              </div>
+              <div class="icon i-right">
+                  <i class="icon-not-favorite"></i>
+              </div>
             </div>
         </div>
         </div>
@@ -65,7 +72,11 @@
         </div>
         </div>
     </transition>
-    <audio ref="audio" :src="currentSong.url" @canplay="ready" @error="error"></audio>
+    <audio ref="audio" 
+          :src="currentSong.url" 
+          @canplay="ready" 
+          @error="error"
+          @timeupdate="updateTime"></audio>
   </div>
 </template>
 
@@ -74,13 +85,15 @@ import { mapGetters, mapMutations } from 'vuex'
 import animations from 'create-keyframe-animation'
 import { prefixStyle } from 'common/js/dom'
 import { getSongKey } from 'api/singer'
+import ProgressBar from 'base/progress-bar/progress-bar'
 
 const transform = prefixStyle('transform')
 
 export default {
   data () {
     return {
-      songReady: false
+      songReady: false,
+      currentTime: 0
     }
   },
   computed: {
@@ -95,6 +108,9 @@ export default {
     },
     disableClass () {
       return this.songReady ? '' : 'disable'
+    },
+    percent () {
+      return this.currentTime / this.currentSong.duration
     },
     ...mapGetters([
       'fullScreen',
@@ -219,6 +235,32 @@ export default {
     error () {
       this.songReady = true
     },
+    updateTime (e) {
+      this.currentTime = e.target.currentTime // 这个属性可读可写
+    },
+    format (interval) {
+      interval = interval | 0 // 相当于向上取整
+      const minute = interval / 60 | 0
+      const second = this._pad(interval % 60)
+      return `${minute}:${second}`
+    },
+    // 接收到 progress-bar组件拖动完成touchend后， emit出来的percent，然后重新设置currentTime
+    onPercentChange (percent) {
+      this.$refs.audio.currentTime = this.currentSong.duration * percent
+      // 拖动到某个位置后，我们希望音乐播放
+      if (!this.playing) {
+        this.togglePlaying(this.playing)
+      }
+    },
+    // 补零函数
+    _pad (num, n = 2) {
+      let len = num.toString().length
+      while (len < n) {
+        num = '0' + num
+        len++
+      }
+      return num
+    },
     _getPosAndScale () {
       // 迷你播放器中 image的宽度， 圆心到左边距，圆形到底边距
       const targetWidth = 40
@@ -261,6 +303,9 @@ export default {
         newPlaying ? audio.play() : audio.pause()
       })
     }
+  },
+  components: {
+    ProgressBar
   }
 }
 </script>
