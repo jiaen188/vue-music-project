@@ -39,3 +39,27 @@ export function getDiscList () {
     return Promise.resolve(res.data)
   })
 }
+
+export function getSongList(disstid) {
+  // 这个是官网的推荐页面 https://y.qq.com/portal/playlist.html
+  // const url = 'https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg'
+  const url = `/api/getDiscSongs/${disstid}`
+
+  const data = Object.assign({}, commonParams, {
+    disstid,
+    type: 1,
+    json: 1,
+    utf8: 1,
+    onlysong: 0,
+    platform: 'yqq',
+    hostUin: 0,
+    needNewCode: 0
+  })
+
+  // return jsonp(url, data, options)
+  return axios.get(url, {
+    params: data
+  }).then(res => {
+    return Promise.resolve(res.data)
+  })
+}

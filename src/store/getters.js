@@ -21,3 +21,6 @@ export const currentIndex = state => state.currentIndex
 export const currentSong = (state) => {
   return state.playlist[state.currentIndex] || {}
 }
+
+// 推荐页面中， 热门专辑的数据
+export const disc = state => state.disc

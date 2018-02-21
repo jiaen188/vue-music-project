@@ -65,6 +65,33 @@ apiRoutes.get('/lyric', function (req, res) {
   })
 })
 
+apiRoutes.get('/getDiscSongs/:dissid', function (req, res) {
+  var url = 'https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg'
+  var refer = 'https://y.qq.com/n/yqq/playsquare/' + req.params.dissid + '.html'
+
+  axios.get(url, {
+    headers: {
+      referer: refer,
+      host: 'c.y.qq.com'
+    },
+    params: req.query
+  }).then((response) => {
+    var ret = response.data
+    // 这里返回的数据是 字符串，所以要用正则解析
+    if (typeof ret === 'string') {
+      var reg = /^\w+\(({[^\n]+})\)$/
+      var matches = ret.match(reg)
+      if (matches) {
+        ret = JSON.parse(matches[1])
+      }
+    }
+    res.json(ret)
+    // res.json(response.data)
+  }).catch((e) => {
+    console.log(e)
+  })
+})
+
 app.use('/api', apiRoutes)
 
 var compiler = webpack(webpackConfig)
