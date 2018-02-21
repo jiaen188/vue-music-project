@@ -82,7 +82,8 @@ export default {
       this.$router.back()
     },
     selectItem (selectSong, index) {
-      let newPlaylist = JSON.parse(JSON.stringify(this.songs))
+      // let newPlaylist = JSON.parse(JSON.stringify(this.songs))
+      let newPlaylist = this.songs.slice()
       newPlaylist[index] = selectSong
       this.setPlaylist(newPlaylist)
       // 接收到 song-list组件的点击时，emit出来的 item和index

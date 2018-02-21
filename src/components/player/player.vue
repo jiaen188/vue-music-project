@@ -17,16 +17,33 @@
             <h1 class="title" v-html="currentSong.name"></h1>
             <h2 class="subtitle" v-html="currentSong.singer"></h2>
         </div>
-        <div class="middle">
-            <div class="middle-l">
-            <div class="cd-wrapper" ref="cdWrapper">
-                <div class="cd" :class="cdClass">
-                <img class="image" :src="currentSong.image" alt="">
+        <div class="middle" 
+            @touchstart.prevent="middleTouchStart"
+            @touchmove.prevent="middleTouchMove"
+            @touchend="middleTouchEnd">
+            <div class="middle-l" ref="middleL">
+              <div class="cd-wrapper" ref="cdWrapper">
+                  <div class="cd" :class="cdClass">
+                  <img class="image" :src="currentSong.image" alt="">
+                  </div>
+              </div>
+            </div>
+            <scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
+              <div class="lyric-wrapper">
+                <div v-if="currentLyric">
+                  <p ref="lyricLine"
+                      class="text"
+                      :class="{'current': currentLineNum === index}"
+                      v-for="(line, index) in currentLyric.lines">{{line.txt}}</p>
                 </div>
-            </div>
-            </div>
+              </div>
+            </scroll>
         </div>
         <div class="bottom">
+            <div class="dot-wrapper">
+              <span class="dot" :class="{'active': currentShow === 'cd'}"></span>
+              <span class="dot" :class="{'active': currentShow === 'lyric'}"></span>
+            </div>
             <div class="progress-wrapper">
               <span class="time time-l">{{format(currentTime)}}</span>
               <div class="progress-bar-wrapper">
@@ -92,15 +109,23 @@ import ProgressBar from 'base/progress-bar/progress-bar'
 import ProgressCircle from 'base/progress-circle/progress-circle'
 import { playMode } from 'common/js/config'
 import { shuffle } from 'common/js/util'
+import Lyric from 'lyric-parser'
+import { getSongLyric } from 'common/js/song'
+import Scroll from 'base/scroll/scroll'
 
 const transform = prefixStyle('transform')
+const transitionDuration = prefixStyle('transitionDuration')
 
 export default {
   data () {
     return {
       songReady: false,
       currentTime: 0,
-      radius: 32
+      radius: 32,
+      currentLyric: null,
+      // 当前歌词所在的行
+      currentLineNum: 0,
+      currentShow: 'cd'
     }
   },
   computed: {
@@ -131,6 +156,9 @@ export default {
       'mode',
       'sequenceList'
     ])
+  },
+  created () {
+    this.touch = {}
   },
   methods: {
     open () {
@@ -217,9 +245,11 @@ export default {
       }
       // 现在的歌曲地址，需要一个key， 所以我们先通过vuex改变playlist，再改变currentIndex， 最后改变currentSong
       let song = Object.assign({}, this.playlist[index])
+      // let song = this.playlist[index]
       getSongKey(song).then(res => {
         song.url = `http://dl.stream.qqmusic.qq.com/C400${song.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
-        let newPlaylist = JSON.parse(JSON.stringify(this.playlist))
+        // let newPlaylist = JSON.parse(JSON.stringify(this.playlist))
+        let newPlaylist = this.playlist.slice()
         newPlaylist[index] = song
 
         this.setPlaylist(newPlaylist)
@@ -243,7 +273,8 @@ export default {
       let song = Object.assign({}, this.playlist[index])
       getSongKey(song).then(res => {
         song.url = `http://dl.stream.qqmusic.qq.com/C400${song.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
-        let newPlaylist = JSON.parse(JSON.stringify(this.playlist))
+        // let newPlaylist = JSON.parse(JSON.stringify(this.playlist))
+        let newPlaylist = this.playlist.slice()
         newPlaylist[index] = song
 
         this.setPlaylist(newPlaylist)
@@ -298,6 +329,98 @@ export default {
       let index = list.findIndex(item => item.id === this.currentSong.id)
       this.setCurrentIndex(index)
     },
+    // 获取歌词
+    getLyric() {
+      // this.currentSong.getLyric().then(res => {
+      //   this.currentLyric = new Lyric(res, this.handleLyric)
+      //   if (this.playing) {
+      //     this.currentLyric.play()
+      //   }
+      //   console.log('看看这个ly对象')
+      //   console.log(this.currentLyric)
+      // })
+
+      getSongLyric(this.currentSong).then(res => {
+        this.currentLyric = new Lyric(res, this.handleLyric)
+        if (this.playing) {
+          this.currentLyric.play()
+        }
+        console.log('看看这个ly对象')
+        console.log(this.currentLyric)
+      })
+    },
+    // 当歌词每一行改变的时候， 回调一下这个函数
+    handleLyric ({lineNum, txt}) {
+      this.currentLineNum = lineNum
+      // 如果只有5行，歌词就不用随着滚动
+      if (lineNum > 5) {
+        let lineEl = this.$refs.lyricLine[lineNum - 5]
+        this.$refs.lyricList.scrollToElement(lineEl, 1000)
+      } else {
+        // 小于5行， 直接滚到顶部就行
+        this.$refs.lyricList.scrollTo(0, 0, 1000)
+      }
+    },
+    middleTouchStart (e) {
+      this.touch.initiated = true
+      const touch = e.touches[0]
+      this.touch.startX = touch.pageX
+      this.touch.startY = touch.pageY
+    },
+    middleTouchMove (e) {
+      if (!this.touch.initiated) return
+      const touch = e.touches[0]
+      const deltaX = touch.pageX - this.touch.startX
+      const deltaY = touch.pageY - this.touch.startY
+      // 如果纵向的滚动 大于 横向， 就认为不是想要切换到歌词列表， 因为歌词页面是可以上下滚动的，防止出现冲突
+      if (Math.abs(deltaY) > Math.abs(deltaX)) return
+      // left是指， 歌词面板的左边 距离 手机视口的右边 的距离
+      const left = this.currentShow === 'cd' ? 0 : -window.innerWidth
+      // offsetWidth 是指 歌词面板的 可偏移范围
+      const offsetWidth = Math.min(0, Math.max(-window.innerWidth, left + deltaX))
+      this.touch.percent = Math.abs(offsetWidth / window.innerWidth)
+      // 移动歌词的位置
+      this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px, 0, 0)`
+      // 设置渐变动画时间
+      this.$refs.lyricList.$el.style[transitionDuration] = 0
+      // 滑动的时候， 改变中间iamge 的透明度
+      this.$refs.middleL.style.opacity = 1 - this.touch.percent
+      this.$refs.middleL.style[transitionDuration] = 0
+    },
+    middleTouchEnd () {
+      let offsetWidth
+      let opacity
+      // 从右向左滑动
+      if (this.currentShow === 'cd') {
+        // 如果滑动超过 10%， 就切换到歌词
+        if (this.touch.percent > 0.1) {
+          offsetWidth = -window.innerWidth
+          opacity = 0
+          this.currentShow = 'lyric'
+        } else {
+          // 不到10%， 就变回原来的面板
+          offsetWidth = 0
+          opacity = 1
+        }
+      } else {
+        if (this.touch.percent < 0.9) {
+          offsetWidth = 0
+          this.currentShow = 'cd'
+          opacity = 1
+        } else {
+          offsetWidth = -window.innerWidth
+          opacity = 0
+        }
+      }
+      const time = 300
+      // 滑动结束， 设置歌词面板到底在什么位置
+      this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px, 0, 0)`
+      // 渐变动画设置时间为 300ms
+      this.$refs.lyricList.$el.style[transitionDuration] = `${time}ms`
+      // 滑动的时候， 改变中间iamge 的透明度
+      this.$refs.middleL.style.opacity = opacity
+      this.$refs.middleL.style[transitionDuration] = `${time}ms`
+    },
     // 补零函数
     _pad (num, n = 2) {
       let len = num.toString().length
@@ -345,6 +468,8 @@ export default {
       if (newSong.id === oldSong.id) return
       this.$nextTick(() => {
         this.$refs.audio.play()
+        // 获取歌词
+        this.getLyric()
       })
     },
     // 检测到vuex中播放状态的变化，做对应的处理
@@ -357,7 +482,8 @@ export default {
   },
   components: {
     ProgressBar,
-    ProgressCircle
+    ProgressCircle,
+    Scroll
   }
 }
 </script>

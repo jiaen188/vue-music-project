@@ -26,9 +26,9 @@ export default {
     selectItem (item, index) {
       // 歌曲被点击后，emit出去告诉外层组件，song和index
       getSongKey(item).then(res => {
-        let song = Object.assign({}, item)
-        song.url = `http://dl.stream.qqmusic.qq.com/C400${song.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
-        this.$emit('select', song, index)
+        // let song = Object.assign({}, item)
+        item.url = `http://dl.stream.qqmusic.qq.com/C400${item.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
+        this.$emit('select', item, index)
       })
     },
     getDesc (song) {

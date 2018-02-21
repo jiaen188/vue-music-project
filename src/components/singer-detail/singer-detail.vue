@@ -45,7 +45,7 @@ export default {
           getSongKey(this.songs[0]).then(res => {
             let song = this.songs[0]
             song.url = `http://dl.stream.qqmusic.qq.com/C400${song.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
-            this.setPlaylist(this.songs)
+            // this.setPlaylist(this.songs)
           })
         }
       })

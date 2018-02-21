@@ -51,6 +51,7 @@ apiRoutes.get('/lyric', function (req, res) {
     params: req.query
   }).then((response) => {
     var ret = response.data
+    // 这里返回的数据是 字符串，所以要用正则解析
     if (typeof ret === 'string') {
       var reg = /^\w+\(({[^()]+})\)$/
       var matches = ret.match(reg)
