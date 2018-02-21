@@ -100,6 +100,9 @@ export default {
       let anchorIndex = parseInt(this.touch.anchorIndex) + delta
       this._scrollTo(anchorIndex)
     },
+    refresh () {
+      this.$refs.listview.refresh()
+    },
     // scroll组件emit出来的scroll方法被html中绑定到scroll方法上
     scroll (pos) {
       this.scrollY = pos.y

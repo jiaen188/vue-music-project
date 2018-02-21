@@ -27,6 +27,9 @@
                   <img class="image" :src="currentSong.image" alt="">
                   </div>
               </div>
+              <div class="playing-lyric-wrapper">
+                <div class="playing-lyric">{{playingLyric}}</div>
+              </div>
             </div>
             <scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
               <div class="lyric-wrapper">
@@ -47,7 +50,7 @@
             <div class="progress-wrapper">
               <span class="time time-l">{{format(currentTime)}}</span>
               <div class="progress-bar-wrapper">
-                <progress-bar @percentChange="onPercentChange" :percent="percent"></progress-bar>
+                <progress-bar @percentChange="onProgressBarChange" :percent="percent"></progress-bar>
               </div>
               <span class="time time-r">{{format(currentSong.duration)}}</span>
             </div>
@@ -120,12 +123,16 @@ export default {
   data () {
     return {
       songReady: false,
+      // 当前歌词播放了多少时间
       currentTime: 0,
       radius: 32,
       currentLyric: null,
       // 当前歌词所在的行
       currentLineNum: 0,
-      currentShow: 'cd'
+      // 当前是显示封面image 还是歌词
+      currentShow: 'cd',
+      // 当前播放的歌词
+      playingLyric: ''
     }
   },
   computed: {
@@ -215,9 +222,17 @@ export default {
     },
     // 切换播放状态
     togglePlaying () {
+      // 如果audio还没有加载好，就不让用户点击
+      if (!this.songReady) {
+        return
+      }
       // setPlayingState是从 mapMutations获取的，playing是从 mapGetters中获取的
       // 改变的只是vuex中的状态，所以要在watch中根据状态做不同的处理
       this.setPlayingState(!this.playing)
+      // 暂停歌曲的时候，如果有歌词，就要停止歌词状态
+      if (this.currentLyric) {
+        this.currentLyric.togglePlay()
+      }
     },
     // 如果当前歌曲播放结束
     end () {
@@ -233,12 +248,14 @@ export default {
     loop () {
       this.$refs.audio.currentTime = 0
       this.$refs.audio.play()
+      // 循环当前歌曲的时候，歌曲播放完成后， 要把当前歌词状态重置到初始状态
+      if (this.currentLyric) {
+        this.currentLyric.seek(0)
+      }
     },
     next () {
       // 如果audio还没有加载好，就不让用户点击
-      if (!this.songReady) {
-        return
-      }
+      if (!this.songReady) return
       let index = this.currentIndex + 1
       if (index === this.playlist.length) {
         index = 0
@@ -303,11 +320,16 @@ export default {
       return `${minute}:${second}`
     },
     // 接收到 progress-bar组件拖动完成touchend后， emit出来的percent，然后重新设置currentTime
-    onPercentChange (percent) {
+    onProgressBarChange (percent) {
+      const currentTime = this.currentSong.duration * percent
       this.$refs.audio.currentTime = this.currentSong.duration * percent
       // 拖动到某个位置后，我们希望音乐播放
       if (!this.playing) {
         this.togglePlaying(this.playing)
+      }
+      // 当歌曲进度被用户调整时候， 需要调整歌词位置
+      if (this.currentLyric) {
+        this.currentLyric.seek(currentTime * 1000)
       }
     },
     // 点击切换模式
@@ -347,6 +369,11 @@ export default {
         }
         console.log('看看这个ly对象')
         console.log(this.currentLyric)
+      }).catch(() => {
+        // 如果获取歌词失败，清理歌词，当前歌词，当前歌词的行数
+        this.currentLyric = null
+        this.playingLyric = ''
+        this.currentLineNum = 0
       })
     },
     // 当歌词每一行改变的时候， 回调一下这个函数
@@ -360,6 +387,8 @@ export default {
         // 小于5行， 直接滚到顶部就行
         this.$refs.lyricList.scrollTo(0, 0, 1000)
       }
+      // 当前播放发的歌词
+      this.playingLyric = txt
     },
     middleTouchStart (e) {
       this.touch.initiated = true
@@ -466,11 +495,15 @@ export default {
       // 所以说会触发这个计算属性, 因此我们判断，newSong和oldSong的id不会，就是同一首，不执行接下来，
       // 否则当用户暂停播放的时候，再切换个播放顺序，下一首会播放
       if (newSong.id === oldSong.id) return
-      this.$nextTick(() => {
+      // 如果已经有歌词， 切换歌词的时候，要先把当前歌词停止掉
+      if (this.currentLyric) {
+        this.currentLyric.stop()
+      }
+      setTimeout(() => {
         this.$refs.audio.play()
         // 获取歌词
         this.getLyric()
-      })
+      }, 1000)
     },
     // 检测到vuex中播放状态的变化，做对应的处理
     playing (newPlaying) {

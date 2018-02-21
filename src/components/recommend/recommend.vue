@@ -1,5 +1,5 @@
 <template>
-  <div class="recommend">
+  <div class="recommend" ref="recommend">
 <!-- 因为歌单列表 是一个异步动作，所以要把discList作为data属性传入，在scroll组件找那个监听data变化，再refresh -->
     <scroll ref="scroll" class="recommend-content" :data="discList">
       <div>
@@ -40,8 +40,10 @@ import Scroll from 'base/scroll/scroll'
 import Slider from 'base/slider/slider'
 import {getRecommend, getDiscList} from 'api/recommend'
 import {ERR_OK} from 'api/config'
+import { playlistMixin } from 'common/js/mixin'
 
 export default {
+  mixins: [playlistMixin],
   data () {
     return {
       recommends: [],
@@ -53,6 +55,11 @@ export default {
     this._getDiscList()
   },
   methods: {
+    handlePlaylist (playlist) {
+      const bottom = playlist.length > 0 ? '60px' : ''
+      this.$refs.recommend.style.bottom = bottom
+      this.$refs.scroll.refresh()
+    },
     _getRecommend () {
       getRecommend().then(res => {
         if (res.code === ERR_OK) {
