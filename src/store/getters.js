@@ -24,3 +24,6 @@ export const currentSong = (state) => {
 
 // 推荐页面中， 热门专辑的数据
 export const disc = state => state.disc
+
+// 排行榜的 某个歌单数据
+export const topList = state => state.topList

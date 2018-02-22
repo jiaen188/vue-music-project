@@ -14,7 +14,9 @@ const state = {
   // 当前播放哪一首歌曲
   currentIndex: -1,
   // 推荐页面中的， 热门歌单的数据
-  disc: {}
+  disc: {},
+  // 排行榜的 某个歌单数据
+  topList: {}
 }
 
 export default state

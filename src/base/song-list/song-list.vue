@@ -2,6 +2,9 @@
   <div class="song-list">
     <ul>
       <li @click="selectItem(song, index)" v-for="(song, index) in songs" class="item">
+        <div class="rank" v-show="rank">
+          <span :class="getRankClass(index)">{{getRankTxt(index)}}</span>
+        </div>
         <div class="content">
           <h2 class="name">{{song.name}}</h2>
           <!-- <p class="desc">{{song.singer}}·{{song.album}}</p> -->
@@ -20,6 +23,10 @@ export default {
     songs: {
       type: Array,
       default: []
+    },
+    rank: {
+      type: Boolean,
+      default: false
     }
   },
   methods: {
@@ -33,6 +40,20 @@ export default {
     },
     getDesc (song) {
       return `${song.singer}·${song.album}`
+    },
+    // 单独为排行榜的歌曲列表准备的，前面名的样式有多一个奖杯
+    getRankClass (index) {
+      if (index <= 2) {
+        return `icon icon${index}`
+      } else {
+        return 'text'
+      }
+    },
+    // 单独为排行榜的歌曲列表准备的
+    getRankTxt (index) {
+      if (index > 2) {
+        return index + 1
+      }
     }
   }
 }

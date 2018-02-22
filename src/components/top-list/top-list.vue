@@ -1,13 +1,13 @@
 <template>
   <transition name="slide">
-    <music-list :title="title" :bgImage="bgImage" :songs="songs"></music-list>
+    <music-list :rank="rank" :title="title" :bgImage="bgImage" :songs="songs"></music-list>
   </transition>
 </template>
 
-<script type="text/ecmascript-6">
+<script>
 import MusicList from 'components/music-list/music-list'
 import { mapGetters } from 'vuex'
-import { getSongList } from 'api/recommend'
+import { getMusicList } from 'api/rank'
 import { ERR_OK } from 'api/config'
 import { createSong } from 'common/js/song'
 import { getSongKey } from 'api/singer'
@@ -15,33 +15,39 @@ import { getSongKey } from 'api/singer'
 export default {
   computed: {
     title () {
-      return this.disc.dissname
+      return this.topList.topTitle
     },
     bgImage () {
-      return this.disc.imgurl
+      // 如果觉得排行榜的封面 丑，就换成第一首歌曲的封面，这里我就不换了
+      /* if (this.songs.length) {
+        return this.songs[0].image
+      }
+      return '' */
+      return this.topList.picUrl
     },
     ...mapGetters([
-      'disc'
+      'topList'
     ])
+  },
+  created () {
+    this._getMusicList()
   },
   data () {
     return {
-      songs: []
+      songs: [],
+      rank: true
     }
   },
-  created () {
-    this._getSongList()
-  },
   methods: {
-    _getSongList () {
-      // 如果在这个 热门歌单页面刷新，就返回 推荐页面
-      if (!this.disc.dissid) {
-        this.$router.push('/recommend')
+    _getMusicList() {
+      // 如果在当前页面 刷新，就回退到上一个页面
+      if (!this.topList.id) {
+        this.$router.push('/rank')
         return
       }
-      getSongList(this.disc.dissid).then(res => {
+      getMusicList(this.topList.id).then(res => {
         if (res.code === ERR_OK) {
-          this.songs = this._normalizeSongs(res.cdlist[0].songlist)
+          this.songs = this._normalizeSongs(res.songlist)
           // 先处理第一首歌曲的地址，为了用户点击“播放全部”的时候直接播放第一手哦
           getSongKey(this.songs[0]).then(res => {
             let song = this.songs[0]
@@ -52,7 +58,8 @@ export default {
     },
     _normalizeSongs (list) {
       let ret = []
-      list.forEach(musicData => {
+      list.forEach(item => {
+        const musicData = item.data
         if (musicData.songid && musicData.albumid) {
           ret.push(createSong(musicData))
         }
@@ -69,7 +76,7 @@ export default {
 
 <style scoped lang="stylus" rel="stylesheet/stylus">
   .slide-enter-active, .slide-leave-active
-    transition: all 0.3s
+    transition: all 0.3s ease
 
   .slide-enter, .slide-leave-to
     transform: translate3d(100%, 0, 0)

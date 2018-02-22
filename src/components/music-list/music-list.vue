@@ -16,7 +16,7 @@
     <div class="bg-layer" ref="layer"></div>
     <scroll @scroll="scroll" :probe-type="probeType" :listen-scroll="listenScroll" :data="songs" class="list" ref="list">
       <div class="song-list-wrapper">
-        <song-list @select="selectItem" :songs="songs"></song-list>
+        <song-list @select="selectItem" :rank="rank" :songs="songs"></song-list>
       </div>
       <div class="loading-container" v-show="!songs.length">
         <loading></loading>
@@ -50,6 +50,11 @@ export default {
     title: {
       type: String,
       default: ''
+    },
+    // 单独为排行榜的歌曲准备的属性
+    rank: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
