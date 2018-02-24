@@ -1,7 +1,7 @@
 <template>
-  <scroll class="suggest" :data="result" :pullup="pullup" @scrollToEnd="searchMore">
+  <scroll class="suggest" :data="result" :pullup="pullup" @scrollToEnd="searchMore" ref="suggest">
     <ul class="suggest-list">
-      <li v-for="item in result" class="suggest-item">
+      <li @click="selectItem(item)" v-for="item in result" class="suggest-item">
         <div class="icon">
           <i :class="getIconClass(item)"></i>
         </div>
@@ -20,6 +20,9 @@ import { ERR_OK } from 'api/config'
 import { createSong } from 'common/js/song'
 import Scroll from 'base/scroll/scroll'
 import Loading from 'base/loading/loading'
+import Singer from 'common/js/singer'
+import { mapMutations, mapActions } from 'vuex'
+import { getSongKey } from 'api/singer'
 
 const TYPE_SINGER = 'singer'
 const perpage = 20
@@ -46,7 +49,10 @@ export default {
   },
   methods: {
     search () {
+      // 第一次搜索，或者更改搜索关键词后，初始化相关数据
+      this.page = 1
       this.hasMore = true
+      this.$refs.suggest.scrollTo(0, 0)
       search(this.query, this.page, this.showSinger, perpage).then(res => {
         if (res.code === ERR_OK) {
           this.result = this._genResult(res.data)
@@ -78,6 +84,23 @@ export default {
         return `${item.name}-${item.singer}`
       }
     },
+    selectItem (item) {
+      if (item.type === TYPE_SINGER) {
+        const singer = new Singer({
+          id: item.singermid,
+          name: item.singername
+        })
+        this.$router.push({
+          path: `/search/${singer.id}`
+        })
+        this.setSinger(singer)
+      } else {
+        getSongKey(item).then(res => {
+          item.url = `http://dl.stream.qqmusic.qq.com/C400${item.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
+          this.insertSong(item)
+        })
+      }
+    },
     _checkMore (data) {
       const song = data.song
       if (!song.list.length || (song.curnum + song.curpage * perpage) >= song.totalnum) {
@@ -102,7 +125,13 @@ export default {
         }
       })
       return ret
-    }
+    },
+    ...mapMutations({
+      setSinger: 'SET_SINGER'
+    }),
+    ...mapActions([
+      'insertSong'
+    ])
   },
   watch: {
     query () {
