@@ -14,15 +14,15 @@ export function getHotKey () {
   return jsonp(url, data, options)
 }
 
-export function search (query, page, zhida) {
+export function search (query, page, zhida, perpage) {
   // 官网的地址是https://m.y.qq.com/#search
   const url = 'https://c.y.qq.com/soso/fcgi-bin/search_for_qq_cp'
 
   const data = Object.assign({}, commonParams, {
     w: query,
     p: page,
-    // perpage,
-    // n: perpage,
+    perpage,
+    n: perpage,
     catZhida: zhida ? 1 : 0,
     zhidaqu: 1,
     t: 0,

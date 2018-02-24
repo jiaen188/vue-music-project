@@ -63,7 +63,7 @@ export function createSong (musicData) {
   })
 }
 
-export function filterSinger (singers) {
+function filterSinger (singers) {
   let ret = []
   if (!singers) return ''
   singers.forEach(s => {
