@@ -16,7 +16,7 @@
       </div>
     </div>
     <div class="search-result" v-show="query">
-      <suggest :query="query"></suggest>  
+      <suggest :query="query" @listScroll="blurInput"></suggest>  
     </div>    
     <router-view></router-view>
   </div>
@@ -46,8 +46,13 @@ export default {
         }
       })
     },
-    onQueryChange(query) {
+    onQueryChange (query) {
       this.query = query
+    },
+     // 在移动端，输入搜索框的时候，会出现键盘，搜索结果列表滚动的时候，键盘不会收起
+    // 所以我们在scroll组件中中监听beforeScrollStart，接收到scroll组件信号后emit一个listScroll，在search组件中，调用search-box组件的方法，用来使输入框失去焦点，就收起了键盘
+    blurInput () {
+      this.$refs.searchBox.blur()
     },
     addQuery (query) {
       console.log('addQuery')

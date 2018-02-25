@@ -42,8 +42,8 @@ export const sequencePlay = function ({commit}, {list}) {
 }
 
 export const insertSong = function ({commit, state}, song) {
-  let playlist = state.playlist
-  let sequenceList = state.sequenceList
+  let playlist = state.playlist.slice()
+  let sequenceList = state.sequenceList.slice()
   let currentIndex = state.currentIndex
   // 记录当前歌曲
   let currentSong = playlist[currentIndex]
@@ -59,7 +59,7 @@ export const insertSong = function ({commit, state}, song) {
   if (fpIndex > -1) {
     // 如果当前添加的序号，大于列表中的序号
     if (currentIndex > fpIndex) {
-      playlist.split(fpIndex, 1)
+      playlist.splice(fpIndex, 1)
       currentIndex--
     } else {
       playlist.splice(fpIndex + 1, 1)
@@ -68,7 +68,9 @@ export const insertSong = function ({commit, state}, song) {
 
   let currentSIndex = findIndex(sequenceList, currentSong) + 1
 
-  let fsIndex = findIndex(sequenceList, 0, song)
+  let fsIndex = findIndex(sequenceList, song)
+
+  sequenceList.splice(currentSIndex, 0, song)
 
   if (fsIndex > -1) {
     if (currentSIndex > fsIndex) {

@@ -30,6 +30,10 @@ export default {
     pullup: {
       type: Boolean,
       default: false
+    },
+    beforeScroll: {
+      type: Boolean,
+      default: false
     }
   },
   mounted () {
@@ -61,6 +65,14 @@ export default {
           }
         })
       }
+
+      // 在移动端，输入搜索框的时候，会出现键盘，搜索结果列表滚动的时候，键盘不会收起
+      // 所以我们监听beforeScrollStart， emit一个beforeScroll到suggest组件，用来使输入框失去焦点，就收起了键盘
+      if (this.beforeScroll) {
+        this.scroll.on('beforeScrollStart', () => {
+          this.$emit('beforeScroll')
+        })
+      } 
     },
     enable () {
       this.scroll && this.scroll.enable()

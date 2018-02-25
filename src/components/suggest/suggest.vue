@@ -1,5 +1,11 @@
 <template>
-  <scroll class="suggest" :data="result" :pullup="pullup" @scrollToEnd="searchMore" ref="suggest">
+  <scroll class="suggest" 
+          :data="result" 
+          :pullup="pullup" 
+          @scrollToEnd="searchMore" 
+          :beforeScroll="beforeScroll" 
+          ref="suggest" 
+          @beforeScroll="listScroll">
     <ul class="suggest-list">
       <li @click="selectItem(item)" v-for="item in result" class="suggest-item">
         <div class="icon">
@@ -11,6 +17,9 @@
       </li>
       <loading v-show="hasMore"></loading>
     </ul>
+    <div v-show="!hasMore && !result.length" class="no-result-wrapper">
+      <no-result title="抱歉，暂无搜索结果"></no-result>
+    </div>
   </scroll>
 </template>
 
@@ -21,8 +30,9 @@ import { createSong } from 'common/js/song'
 import Scroll from 'base/scroll/scroll'
 import Loading from 'base/loading/loading'
 import Singer from 'common/js/singer'
-import { mapMutations, mapActions } from 'vuex'
+import { mapMutations, mapActions, mapGetters } from 'vuex'
 import { getSongKey } from 'api/singer'
+import NoResult from 'base/no-result/no-result'
 
 const TYPE_SINGER = 'singer'
 const perpage = 20
@@ -44,7 +54,8 @@ export default {
       result: [],
       // 是否启动上拉更新
       pullup: true,
-      hasMore: true
+      hasMore: true,
+      beforeScroll: true
     }
   },
   methods: {
@@ -95,11 +106,22 @@ export default {
         })
         this.setSinger(singer)
       } else {
-        getSongKey(item).then(res => {
-          item.url = `http://dl.stream.qqmusic.qq.com/C400${item.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
+        let index = this.playlist.findIndex(song => item.id === song.id)
+
+        if (index > -1) {
           this.insertSong(item)
-        })
+        } else {
+          getSongKey(item).then(res => {
+            item.url = `http://dl.stream.qqmusic.qq.com/C400${item.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
+            this.insertSong(item)
+          })
+        }
       }
+    },
+    // 在移动端，输入搜索框的时候，会出现键盘，搜索结果列表滚动的时候，键盘不会收起
+    // 所以我们在scroll组件中中监听beforeScrollStart，接收到scroll组件信号后， emit一个listScroll到search组件，用来使输入框失去焦点，就收起了键盘
+    listScroll () {
+      this.$emit('listScroll')
     },
     _checkMore (data) {
       const song = data.song
@@ -127,7 +149,8 @@ export default {
       return ret
     },
     ...mapMutations({
-      setSinger: 'SET_SINGER'
+      setSinger: 'SET_SINGER',
+      setPlaylist: 'SET_PLAYLIST'
     }),
     ...mapActions([
       'insertSong'
@@ -138,9 +161,15 @@ export default {
       this.search()
     }
   },
+  computed: {
+    ...mapGetters([
+      'playlist'
+    ])
+  },
   components: {
     Scroll,
-    Loading
+    Loading,
+    NoResult
   }
 }
 </script>

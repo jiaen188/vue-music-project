@@ -492,7 +492,7 @@ export default {
   watch: {
     currentSong (newSong, oldSong) {
       // 当我们切换播放顺序的时候，为了确保当前播放的歌曲不变，我们重置了currentIndex，实际上currentSong是已经改变了（数组的index变了），
-      // 所以说会触发这个计算属性, 因此我们判断，newSong和oldSong的id不会，就是同一首，不执行接下来，
+      // 所以说会触发这个计算属性, 因此我们判断，newSong和oldSong的id不变，就是同一首，不执行接下来，
       // 否则当用户暂停播放的时候，再切换个播放顺序，下一首会播放
       if (newSong.id === oldSong.id) return
       // 如果已经有歌词， 切换歌词的时候，要先把当前歌词停止掉
