@@ -75,25 +75,26 @@
         </div>
     </transition>
     <transition name="mini">
-        <!-- 小的迷你的播放器页面 -->
-        <div class="mini-player" v-show="!fullScreen" @click="open">
+      <!-- 小的迷你的播放器页面 -->
+      <div class="mini-player" v-show="!fullScreen" @click="open">
         <div class="icon">
-            <img :class="cdClass" width="40" height="40" :src="currentSong.image" alt="">
+          <img :class="cdClass" width="40" height="40" :src="currentSong.image" alt="">
         </div>
         <div class="text">
-            <h2 class="name" v-html="currentSong.name"></h2>
-            <p class="desc" v-html="currentSong.singer"></p>
+          <h2 class="name" v-html="currentSong.name"></h2>
+          <p class="desc" v-html="currentSong.singer"></p>
         </div>
         <div class="control">
           <progress-circle :radius="radius" :percent="percent">
             <i @click.stop="togglePlaying" :class="miniIcon" class="icon-mini"></i>
           </progress-circle>
         </div>
-        <div class="control">
-            <i class="icon-playlist"></i>
+        <div class="control" @click="showPlaylist">
+          <i class="icon-playlist"></i>
         </div>
-        </div>
+      </div>
     </transition>
+    <playlist ref="playlist"></playlist>
     <audio ref="audio" 
           :src="currentSong.url" 
           @canplay="ready" 
@@ -115,6 +116,7 @@ import { shuffle } from 'common/js/util'
 import Lyric from 'lyric-parser'
 import { getSongLyric } from 'common/js/song'
 import Scroll from 'base/scroll/scroll'
+import Playlist from 'components/playlist/playlist'
 
 const transform = prefixStyle('transform')
 const transitionDuration = prefixStyle('transitionDuration')
@@ -290,7 +292,6 @@ export default {
       let song = Object.assign({}, this.playlist[index])
       getSongKey(song).then(res => {
         song.url = `http://dl.stream.qqmusic.qq.com/C400${song.mid}.m4a?vkey=${res.data.items[0].vkey}&guid=862835478&uin=0&fromtag=66`
-        // let newPlaylist = JSON.parse(JSON.stringify(this.playlist))
         let newPlaylist = this.playlist.slice()
         newPlaylist[index] = song
 
@@ -353,22 +354,11 @@ export default {
     },
     // 获取歌词
     getLyric() {
-      // this.currentSong.getLyric().then(res => {
-      //   this.currentLyric = new Lyric(res, this.handleLyric)
-      //   if (this.playing) {
-      //     this.currentLyric.play()
-      //   }
-      //   console.log('看看这个ly对象')
-      //   console.log(this.currentLyric)
-      // })
-
       getSongLyric(this.currentSong).then(res => {
         this.currentLyric = new Lyric(res, this.handleLyric)
         if (this.playing) {
           this.currentLyric.play()
         }
-        console.log('看看这个ly对象')
-        console.log(this.currentLyric)
       }).catch(() => {
         // 如果获取歌词失败，清理歌词，当前歌词，当前歌词的行数
         this.currentLyric = null
@@ -389,6 +379,9 @@ export default {
       }
       // 当前播放发的歌词
       this.playingLyric = txt
+    },
+    showPlaylist () {
+      this.$refs.playlist.show()
     },
     middleTouchStart (e) {
       this.touch.initiated = true
@@ -516,7 +509,8 @@ export default {
   components: {
     ProgressBar,
     ProgressCircle,
-    Scroll
+    Scroll,
+    Playlist
   }
 }
 </script>
