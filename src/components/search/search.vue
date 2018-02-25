@@ -4,23 +4,25 @@
       <search-box @query="onQueryChange" ref="searchBox"></search-box>
     </div>
     <div ref="shortcutWrapper" class="shortcut-wrapper" v-show="!query">
-      <scroll ref="shortcut" class="shortcut">
-        <div class="hot-key">
-          <h1 class="title">热门搜索</h1>
-          <ul>
-            <li @click="addQuery(item.k)" v-for="item in hotKey" class="item">
-              <span>{{item.k}}</span>
-            </li>
-          </ul>
-        </div>
-        <div class="search-history" v-show="searchHistory.length">
-          <h1 class="title">
-            <span class="text">搜索历史</span>
-            <span class="clear" @click="showConfirm">
-              <i class="icon-clear"></i>
-            </span>
-          </h1>
-          <search-list @selectHistory="addQuery" @deleteHistory="deleteSearchHistory" :searches="searchHistory"></search-list>
+      <scroll ref="shortcut" class="shortcut" :data="shortcut">
+        <div>
+          <div class="hot-key">
+            <h1 class="title">热门搜索</h1>
+            <ul>
+              <li @click="addQuery(item.k)" v-for="item in hotKey" class="item">
+                <span>{{item.k}}</span>
+              </li>
+            </ul>
+          </div>
+          <div class="search-history" v-show="searchHistory.length">
+            <h1 class="title">
+              <span class="text">搜索历史</span>
+              <span class="clear" @click="showConfirm">
+                <i class="icon-clear"></i>
+              </span>
+            </h1>
+            <search-list @selectHistory="addQuery" @deleteHistory="deleteSearchHistory" :searches="searchHistory"></search-list>
+          </div>
         </div>
       </scroll>
     </div>
@@ -55,6 +57,9 @@ export default {
     }
   },
   computed: {
+    shortcut () {
+      return this.hotKey.concat(this.searchHistory)
+    },
     ...mapGetters([
       'searchHistory'
     ])
@@ -98,6 +103,17 @@ export default {
       'deleteSearchHistory',
       'clearSearchHistory'
     ])
+  },
+  watch: {
+    query (newQuery) {
+      // 如果是从suggest到搜索主页面的时候，清空了query关键字后，那newQuery就是空的
+      // 是为了从搜索中播放了音乐，在把搜索条件清空够，能滚动scroll（这是考虑到如果搜索历史过多，能够滚动）
+      if (!newQuery) {
+        setTimeout(() => {
+          this.$refs.shortcut.refresh()
+        }, 20)
+      }
+    }
   },
   components: {
     SearchBox,
