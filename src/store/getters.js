@@ -27,3 +27,6 @@ export const disc = state => state.disc
 
 // 排行榜的 某个歌单数据
 export const topList = state => state.topList
+
+// 搜索历史
+export const searchHistory = state => state.searchHistory

@@ -117,6 +117,11 @@ export default {
           })
         }
       }
+
+      this.$emit('select')
+    },
+    refresh () {
+      this.$refs.suggest.refresh()
     },
     // 在移动端，输入搜索框的时候，会出现键盘，搜索结果列表滚动的时候，键盘不会收起
     // 所以我们在scroll组件中中监听beforeScrollStart，接收到scroll组件信号后， emit一个listScroll到search组件，用来使输入框失去焦点，就收起了键盘
